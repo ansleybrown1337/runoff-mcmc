@@ -1,6 +1,6 @@
 # Authors
 
-List of contributors to the Water Quality Data Format Converter project.
+List of contributors to the Water Quality Analysis Using MCMC project.
 
 ## Project Maintainers
 

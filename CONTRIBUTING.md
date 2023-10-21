@@ -1,6 +1,6 @@
 # Contributing to Water Quality Data Format Converter
 
-First off, thank you for considering contributing to the Water Quality Data Format Converter repository. It's people like you that make this tool useful and educational for everyone. 
+First off, thank you for considering contributing to the Water Quality Analysis Using MCMC repository. It's people like you that make this tool useful and educational for everyone. 
 
 ## Getting Started
 
@@ -23,10 +23,10 @@ By participating in this project, you are expected to uphold our Code of Conduct
 
 ## Resources
 
-If you are new to either R or Python or want to refresh your knowledge:
+If you are new to either R or MCMC using NIMBLE or want to refresh your knowledge:
 
 - [R for Data Science](https://r4ds.had.co.nz/)
-- [Python Documentation](https://docs.python.org/3/)
+- [NIMBLE Documentation](https://r-nimble.org/)
 
 ## Feedback
 
@@ -34,4 +34,4 @@ If you're unsure about anything, need help with the setup, or want to discuss a 
 
 ## Thank You!
 
-Once again, thank you for your contributions. Your efforts will help improve the Water Quality Data Format Converter and make it a valuable resource for the community.
+Once again, thank you for your contributions. Your efforts will help improve the Water Quality Analysis Using MCMC and make it a valuable resource for the community.
