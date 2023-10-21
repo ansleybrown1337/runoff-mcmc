@@ -33,8 +33,8 @@ Feel free to explore the code, datasets, and documentation. Your contributions, 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/water-quality-data-converter.git
-cd water-quality-data-converter
+git clone https://github.com/your-username/runoff-mcmc.git
+cd runof-mcmc
 ```
 
 2. Open the R code in the repository using an IDE like Rstudio or VS code.
@@ -74,7 +74,7 @@ _Note_:
 
 
 A plot map of the agricultural field is shown below for context:
-![plot map](/images/field-map.png)
+![plot map](/images/plot.png)
 
 
 ## Contribute
