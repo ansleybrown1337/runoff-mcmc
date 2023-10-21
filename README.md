@@ -23,10 +23,10 @@ Feel free to explore the code, datasets, and documentation. Your contributions, 
 
 ## Directory Structure
 
-- `Code`: This directory contains all the R and Python scripts used for converting data formats.
-- `Example Data`: Sample datasets in the old and new formats to help users understand the kind of data the scripts work with.
-- `images`: Contains banner PNG
-- `Output`: This directory is where the converted files will be saved after running the scripts.
+- `Code`: This directory contains the R code for analysis.
+- `Example Data`: Sample dataset that I'm using to test my analysis.
+- `images`: Contains banner image.
+- `Output`: Where output images and results will be saved.
 
 ## Getting Started
 
