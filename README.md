@@ -21,6 +21,7 @@ Feel free to explore the code, datasets, and documentation. Your contributions, 
 - [Running the Model](#running-the-model)
 - [Contribute](#contribute)
 - [License](#license)
+- [References](#references)
 
 ## Directory Structure
 
@@ -34,7 +35,7 @@ Feel free to explore the code, datasets, and documentation. Your contributions, 
 1. Clone the repository:
 ```bash
 git clone https://github.com/your-username/runoff-mcmc.git
-cd runof-mcmc
+cd runoff-mcmc
 ```
 
 2. Open the R code in the repository using an IDE like Rstudio or VS code.
