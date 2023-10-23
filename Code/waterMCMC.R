@@ -154,7 +154,7 @@ summary(modtssm)
 anova(modtssm, ddf = "Kenward-Roger")
 plot(modtssm) # a bit heteroskedastic if you ask me :)
 
-# # Some result notes by AJB
+# Some result notes by AJB
 # Random Effects Variances: The variance for the random effect (1|id) is 0, and for (1|block), it's very close to zero. This suggests that the model cannot estimate variability for these random effects given the data. In other words, the random intercepts for id are redundant, and those for block provide minimal information.
 # Fixed Effects: The fixed effects seem to have been estimated without any issues.
 # 
@@ -174,22 +174,27 @@ lsm_df$trt_year <- paste(lsm_df$trt, lsm_df$year, sep="_")
 
 
 # Create the forest plot by year
-ggplot(lsm_df, aes(x=trt, y=lsmean, ymin=lower.CL, ymax=upper.CL, group=year)) +
-  geom_point(aes(color=year), size=3) +
-  geom_errorbar(aes(color=year), width=0.2) +
+plt_yr <- ggplot(lsm_df, aes(x=trt, y=lsmean, ymin=lower.CL, ymax=upper.CL, group=year)) +
+  geom_point(aes(color=trt), size=3) +
+  geom_errorbar(aes(color=trt), width=0.2) +
   facet_wrap(~year, scales="free_x") +
   theme_minimal() +
   labs(y="Estimated TSS Mean (mg/L)", x="Treatment") +
   theme(legend.position="bottom")
+plt_yr
 
 # Create the forest plot over all years by trt
-ggplot(lsm_df, aes(x=trt_year, y=lsmean, ymin=lower.CL, ymax=upper.CL, group=trt_year)) +
+plt_all <- ggplot(lsm_df, aes(x=trt_year, y=lsmean, ymin=lower.CL, ymax=upper.CL, group=trt_year)) +
   geom_point(aes(color=trt), size=3) +
   geom_errorbar(aes(color=trt), width=0.2) +
   theme_minimal() +
   labs(y="Estimated TSS Mean (mg/L", x="Treatment-Year Combination") +
   theme(legend.position="bottom", axis.text.x = element_text(angle = 45, hjust = 1))
+plt_all
 
+# Save output images
+ggsave(filename = "Output/forest_plot_yr_LMM.png", plot = plt_yr, width = 10, height = 6, dpi = 300)
+ggsave(filename = "Output/forest_plot_all_LMM.png", plot = plt_all, width = 10, height = 6, dpi = 300)
 
 
 
