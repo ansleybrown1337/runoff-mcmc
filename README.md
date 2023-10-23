@@ -5,7 +5,9 @@ _By A.J. Brown, Agricultural Data Scientist_
 > [!WARNING]  
 > This project is not yet complete, so this code is not yet fully functional.  This notice will be removed when a first version is successful and online.
 
-Here, we explore the application of Markov chain Monte Carlo (MCMC) techniques to model runoff water quality. This project signifies my inaugural venture into leveraging MCMC methodologies, aiming to provide a deeper understanding and predictive capabilities for runoff water quality.
+Here, we explore the application of [Markov chain Monte Carlo (MCMC) techniques](https://towardsdatascience.com/monte-carlo-markov-chain-mcmc-explained-94e3a6c8de11) to model runoff water quality using a Bayesian approach. We also compare results from a Frequentist linear mixed model (LMM) This project signifies my inaugural venture into leveraging MCMC methodologies, aiming to provide a deeper understanding and predictive capabilities for runoff water quality.
+
+For a nice discussion on Frequentist v. Bayesian theory, check out [this article from the National Institue of Health (NIH)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6406060/).
 
 ## Key Features:
 - **Programming Language:** R
