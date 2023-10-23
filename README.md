@@ -2,6 +2,9 @@
 # Modeling Runoff Water Quality using Markov-Chain Monte Carlo Techniques in R
 _By A.J. Brown, Agricultural Data Scientist_
 
+> [!WARNING]  
+> This project is not yet complete, so this code is not yet fully functional.  This notice will be removed when a first version is successful and online.
+
 Here, we explore the application of Markov chain Monte Carlo (MCMC) techniques to model runoff water quality. This project signifies my inaugural venture into leveraging MCMC methodologies, aiming to provide a deeper understanding and predictive capabilities for runoff water quality.
 
 ## Key Features:
@@ -12,7 +15,6 @@ Here, we explore the application of Markov chain Monte Carlo (MCMC) techniques t
 The repository is structured to guide you through the entire process, from data preprocessing to model evaluation. Whether you're an environmental scientist, a data analyst, or someone with a keen interest in water quality modeling, this repository offers insights into the potential of MCMC techniques in the field.
 
 Feel free to explore the code, datasets, and documentation. Your contributions, feedback, and suggestions are always appreciated!
-
 
 ## Table of Contents
 
