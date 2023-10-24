@@ -24,7 +24,9 @@ package.list <- c(
     'lme4',
     'lmerTest',
     'lsmeans',
-    'ggplot2'
+    'ggplot2',
+    'dplyr',
+    'tidyr'
     )
 packageLoad <- function(packages){
   for (i in packages) {
@@ -60,22 +62,96 @@ str(tss_df)
 # Get a summary of the data
 summary(tss_df)
 
+# note on building priors for MCMC analysis:
+# For fixed effects: Using a prior centered around zero, but with a 
+# standard deviation (sd) that's slightly larger than the tss sample 
+# standard deviation of tss, which is 0.71 mg/L and 22.15 kg, respectively. 
+# For random effects: 
+#   tau_yi:
+#   Prior: dunif(0, 1.5)
+#   Explanation: The uniform prior is based on the observed yearly variability. 
+#   The maximum observed standard deviation across yi's is 0.801, so the upper 
+#   bound is set slightly higher at 1.5 to capture potential variability.
+#
+#   tau_block:
+#   Prior: dunif(0, 1)
+#   Explanation: Same reasoning as tau_yi but by block
+#
+#   tau_id:
+#   Prior: dunif(0, 1.5)
+#   Explanation: 
+#
+#   u_yi, u_block, u_id:
+#   Priors: Each u term (representing random effects for yi, block, and id) is 
+#   drawn from a normal distribution centered at zero with the respective 
+#   standard deviation (tau_yi, tau_block, or tau_id).
+#   Explanation: This captures the random variability across years (yi), blocks,
+#   and IDs.
+#
+#   sigma:
+#   Prior: dunif(0, 2)
+#   Explanation: This is a broad prior for the residual error. Given the sample standard deviation of tss is 0.71, setting an upper bound of 2 allows the model to capture potential larger variabilities in the residuals.
+
+recommend_priors <- function(df, column_name) {
+  # Ensure column_name exists in the dataframe
+  if (!(column_name %in% colnames(df))) {
+    stop(paste0("The column '", column_name, "' does not exist in the dataframe."))
+  }
+  
+  cat(paste0("Recommended priors based on column: '", column_name, "'\n\n"))
+  
+  # Compute the maximum standard deviation for each effect
+  max_sd <- df %>%
+    summarise(
+      trt = max(tapply(.data[[column_name]], trt, sd)),
+      block = max(tapply(.data[[column_name]], block, sd)),
+      year = max(tapply(.data[[column_name]], year, sd)),
+      yi = max(tapply(.data[[column_name]], yi, sd)),
+      id = max(tapply(.data[[column_name]], id, sd))
+    )
+  
+  # Double the max standard deviation and round to the nearest whole number
+  doubled_rounded <- round(2 * max_sd)
+  
+  # Combine the results into a table
+  recommended_prior_table <- bind_cols(
+    effect = names(max_sd),
+    identified_max = as.numeric(max_sd),
+    recommended_prior = as.numeric(doubled_rounded)
+  )
+  
+  return(recommended_prior_table)
+}
+
+# Test the function
+priors_tss <- recommend_priors(tss_df, 'tss')
+priors_tss
+priors_tssl <- recommend_priors(tss_df, 'tssl')
+priors_tssl
+
 # ------------------------------------------------------------------------------
 # MCMC Model Developed by A.J. Brown using NIMBLE
 # Use the NIMBLE cheatsheet to help with the syntax:
 # https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf
 # https://r-nimble.org/bayesian-nonparametric-models-in-nimble-part-2-nonparametric-random-effects
 
+# Step 1: Build the model
 code <- nimbleCode({
-  # Fixed effects
-  beta0 ~ dnorm(0, sd = 100)
+  # note on building priors:
+    # For fixed effects: Using a prior centered around zero, but with a 
+    # standard deviation (sd) that's slightly larger than the tss sample 
+    # standard deviation of tss, which is 0.71 mg/L and . 
   
-  # Looping over the elements of betaTrt and betaYear
+  
+  # Fixed effects
+  beta0 ~ dnorm(0, sd = 0.8)
+  
+    # Looping over the elements of betaTrt and betaYear
   for(k in 1:3) {
-    betaTrt[k] ~ dnorm(0, sd = 100)
+    betaTrt[k] ~ dnorm(0, sd = 0.8)
   }
   for(k in 1:maxYear) {
-    betaYear[k] ~ dnorm(0, sd = 100)
+    betaYear[k] ~ dnorm(0, sd = 0.8)
   }
   
   # Random effects
@@ -95,19 +171,17 @@ code <- nimbleCode({
     u_id[j] ~ dnorm(0, sd = tau_id)
   }
   
-  tau_yi ~ dunif(0, 100)
-  tau_block ~ dunif(0, 100)
-  tau_id ~ dunif(0, 100)
+  tau_yi ~ dunif(0, 2)
+  tau_block ~ dunif(0, 2)
+  tau_id ~ dunif(0, 2)
   
-  sigma ~ dunif(0, 100) # prior for variance components based on Gelman (2006); 
+  sigma ~ dunif(0, 2) # prior for variance components based on Gelman (2006); 
   
   for(i in 1:n) {
     tss[i] ~ dnorm(beta0 + betaTrt[trt[i]] + betaYear[year[i]] + 
                      u_yi[yi[i]] + u_block[block[i]] + u_id[id[i]], sd = sigma)
   }
 })
-
-# Here, we don't need to center 'trt' and 'year' as they are factors
 
 constants <- list(
   n = nrow(tss_df), 
@@ -140,16 +214,45 @@ inits <- list(
   u_id = rep(0, constants$nid)
 )
 
-model <- nimbleModel(
+TSSmodel <- nimbleModel(
   code, 
   constants = constants, 
   data = data, 
   inits = inits
 )
 
-# Configure MCMC samplers
-mcmcConf <- configureMCMC(model)
-mcmcConf$printSamplers()
+# Step 2: Build the MCMC
+TSSmcmc <- buildMCMC(TSSmodel, enableWAIC = TRUE)
+
+# Step 3: Compile the model and MCMC
+cTSSmodel <- compileNimble(TSSmodel)
+cTSSmcmc <- compileNimble(TSSmcmc, project = TSSmodel)
+
+# Step 4: Run the MCMC
+time_baseline <- system.time(TSSresults <- runMCMC(cTSSmcmc,
+                                                  niter=11000,
+                                                  nburnin=1000,
+                                                  WAIC=TRUE)
+                                                  )
+cat("Sampling time: ", time_baseline[3], "seconds.\n")
+
+# Step 5: Extract the samples and WAIC
+  # Samples
+samples <- TSSresults$samples
+
+  # Watanabe-Akaike Information Criterion (WAIC): captures model fit
+  # Log Pointwise Predictive Density (LPPD): captures model complexity
+  # effective number of parameters in the model (pWAIC): balances previous two
+  # The relationship: WAIC=−2×lppd+2×pWAIC
+WAIC <- TSSresults$WAIC
+WAIC
+
+
+# Step 6: Inspect Results
+plot(as.mcmc(samples))
+dev.off()
+
+
 
 
 # ------------------------------------------------------------------------------
