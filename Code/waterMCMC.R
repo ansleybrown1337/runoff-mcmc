@@ -69,8 +69,14 @@ summary(tss_df)
 code <- nimbleCode({
   # Fixed effects
   beta0 ~ dnorm(0, sd = 100)
-  betaTrt[1:3] ~ dnorm(0, sd = 100) # Assuming 3 levels: CT, MT, ST
-  betaYear[1:maxYear] ~ dnorm(0, sd = 100) # Assuming 'maxYear' distinct years
+  
+  # Looping over the elements of betaTrt and betaYear
+  for(k in 1:3) {
+    betaTrt[k] ~ dnorm(0, sd = 100)
+  }
+  for(k in 1:maxYear) {
+    betaYear[k] ~ dnorm(0, sd = 100)
+  }
   
   # Random effects
   # Gelman (2006) recommends the uniform prior on the sd scale not the precision scale for random effects:
@@ -108,16 +114,17 @@ constants <- list(
   nyi = length(unique(tss_df$yi)), 
   nblock = length(unique(tss_df$block)), 
   nid = length(unique(tss_df$id)), 
-  maxYear = length(unique(tss_df$year))
+  maxYear = length(unique(tss_df$year)),
+  # Converting factors to numeric below for MCMC
+  trt = as.numeric(tss_df$trt),
+  yi = as.numeric(tss_df$yi),
+  id = as.numeric(tss_df$id),
+  year = as.numeric(tss_df$year),
+  block = as.numeric(tss_df$block)
 )
 
 data <- list(
-  tss = tss_df$tss, 
-  yi = as.numeric(tss_df$yi), 
-  block = as.numeric(tss_df$block), 
-  id = as.numeric(tss_df$id),
-  trt = as.numeric(tss_df$trt), # Convert factor to numeric
-  year = as.numeric(tss_df$year) # Convert factor to numeric
+  tss = tss_df$tss 
 )
 
 inits <- list(
