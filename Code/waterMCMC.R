@@ -62,42 +62,13 @@ str(tss_df)
 # Get a summary of the data
 summary(tss_df)
 
-# note on building priors for MCMC analysis:
-# For fixed effects: Using a prior centered around zero, but with a 
-# standard deviation (sd) that's slightly larger than the tss sample 
-# standard deviation of tss, which is 0.71 mg/L and 22.15 kg, respectively. 
-# For random effects: 
-#   tau_yi:
-#   Prior: dunif(0, 1.5)
-#   Explanation: The uniform prior is based on the observed yearly variability. 
-#   The maximum observed standard deviation across yi's is 0.801, so the upper 
-#   bound is set slightly higher at 1.5 to capture potential variability.
-#
-#   tau_block:
-#   Prior: dunif(0, 1)
-#   Explanation: Same reasoning as tau_yi but by block
-#
-#   tau_id:
-#   Prior: dunif(0, 1.5)
-#   Explanation: 
-#
-#   u_yi, u_block, u_id:
-#   Priors: Each u term (representing random effects for yi, block, and id) is 
-#   drawn from a normal distribution centered at zero with the respective 
-#   standard deviation (tau_yi, tau_block, or tau_id).
-#   Explanation: This captures the random variability across years (yi), blocks,
-#   and IDs.
-#
-#   sigma:
-#   Prior: dunif(0, 2)
-#   Explanation: This is a broad prior for the residual error. Given the sample standard deviation of tss is 0.71, setting an upper bound of 2 allows the model to capture potential larger variabilities in the residuals.
-
+# Creating prior std. dev.'s for MCMC (see README.md notes on this)
 recommend_priors <- function(df, column_name) {
   # Ensure column_name exists in the dataframe
   if (!(column_name %in% colnames(df))) {
     stop(paste0("The column '", column_name, "' does not exist in the dataframe."))
   }
-  
+  # Let user know what column they have selected
   cat(paste0("Recommended priors based on column: '", column_name, "'\n\n"))
   
   # Compute the maximum standard deviation for each effect
@@ -137,12 +108,6 @@ priors_tssl
 
 # Step 1: Build the model
 code <- nimbleCode({
-  # note on building priors:
-    # For fixed effects: Using a prior centered around zero, but with a 
-    # standard deviation (sd) that's slightly larger than the tss sample 
-    # standard deviation of tss, which is 0.71 mg/L and . 
-  
-  
   # Fixed effects
   beta0 ~ dnorm(0, sd = 0.8)
   
