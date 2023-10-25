@@ -136,9 +136,9 @@ code <- nimbleCode({
     u_id[j] ~ dnorm(0, sd = tau_id)
   }
   
-  tau_yi ~ dunif(0, 2)
-  tau_block ~ dunif(0, 2)
-  tau_id ~ dunif(0, 2)
+  tau_yi ~ dunif(0, 3)
+  tau_block ~ dunif(0, 1)
+  tau_id ~ dunif(0, 1)
   
   sigma ~ dunif(0, 2) # prior for variance components based on Gelman (2006); 
   
@@ -204,7 +204,7 @@ cat("Sampling time: ", time_baseline[3], "seconds.\n")
 # Step 5: Extract the samples and WAIC
   # Samples
 samples <- TSSresults$samples
-
+samples
   # Watanabe-Akaike Information Criterion (WAIC): captures model fit
   # Log Pointwise Predictive Density (LPPD): captures model complexity
   # effective number of parameters in the model (pWAIC): balances previous two
@@ -214,6 +214,7 @@ WAIC
 
 
 # Step 6: Inspect Results
+pdf('./Output/mcmcOutput.pdf')
 plot(as.mcmc(samples))
 dev.off()
 
@@ -263,7 +264,7 @@ plt_all <- ggplot(lsm_df, aes(x=trt_year, y=lsmean, ymin=lower.CL, ymax=upper.CL
   geom_point(aes(color=trt), size=3) +
   geom_errorbar(aes(color=trt), width=0.2) +
   theme_minimal() +
-  labs(y="Estimated TSS Mean (mg/L", x="Treatment-Year Combination") +
+  labs(y="Estimated TSS Load (kg)", x="Treatment-Year Combination") +
   theme(legend.position="bottom", axis.text.x = element_text(angle = 45, hjust = 1))
 plt_all
 
