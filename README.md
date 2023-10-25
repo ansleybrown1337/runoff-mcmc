@@ -23,6 +23,9 @@ Feel free to explore the code, datasets, and documentation. Your contributions, 
 - [Directory Structure](#directory-structure)
 - [Getting Started](#getting-started)
 - [Running the Model](#running-the-model)
+- [Data Structure](#data-structure)
+- [Selecting Priors for MCMC Analysis](#selecting-priors-for-mcmc-analysis)
+- [Results of Analysis](#results-of-analysis)
 - [Contribute](#contribute)
 - [License](#license)
 - [References](#references)
@@ -81,6 +84,38 @@ _Note_:
 A plot map of the agricultural field is shown below for context:
 ![plot map](/images/plot.png)
 
+## Selecting Priors for MCMC Analysis
+In Bayesian modeling, the choice of priors is fundamental as they represent our beliefs about the parameters before incorporating any data. In our MCMC analysis, we've selected our priors based on the structure of the model and insights from the observed data.
+
+### Fixed Effects
+For the fixed effects in our model, we aim to use weakly informative priors:
+- **Prior**: Centered around zero with a standard deviation marginally larger than the sample standard deviation.
+- **Rationale**: The sample standard deviations for `tss` and `tssl` are 0.71 mg/L and 22.15 kg, respectively. We thus selected priors that are centered around zero and have standard deviations slightly more expansive than these values.
+
+### Random Effects
+Random effects for `yi`, `block`, and `id` are integral to our model. The choice of priors for these terms is based on observed variability:
+
+- **For `tss`:**
+  - **tau_yi**: `dunif(0, 4)` based on a maximum observed SD across `yi` of 1.88.
+  - **tau_block**: `dunif(0, 2)` based on a maximum observed SD across blocks of 0.787.
+  - **tau_id**: `dunif(0, 2)` based on a maximum observed SD for `id` of 0.948.
+
+- **For `tssl`:**
+  - **tau_yi**: `dunif(0, 122)` given a maximum SD across `yi` of 61.1.
+  - **tau_block**: `dunif(0, 45)` given a maximum SD across blocks of 22.7.
+  - **tau_id**: `dunif(0, 61)` based on a maximum SD for `id` of 30.3.
+
+For each of the `u` terms, representing the random effects:
+- **Priors**: Terms (`u_yi`, `u_block`, `u_id`) are drawn from normal distributions centered at zero. Their standard deviations correspond to their respective tau values.
+- **Rationale**: This captures the variability for each year (`yi`), block, and ID.
+
+### Residual Error (sigma)
+- **Prior for `tss`**: `dunif(0, 2)`
+- **Prior for `tssl`**: `dunif(0, 44)` (Double the SD for `tssl`)
+- **Rationale**: These are broad priors for the residual error. Setting the upper bounds as suggested allows the model to accommodate potential larger variabilities in the residuals for both `tss` and `tssl`.
+
+## Results of Analysis
+Coming Soon!
 
 ## Contribute
 
