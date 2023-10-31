@@ -113,10 +113,10 @@ code <- nimbleCode({
   
     # Looping over the elements of betaTrt and betaYear
   for(k in 1:3) {
-    betaTrt[k] ~ dnorm(0, sd = 0.8)
+    betaTrt[k] ~ dnorm(1, sd = 0.8)
   }
   for(k in 1:maxYear) {
-    betaYear[k] ~ dnorm(0, sd = 0.8)
+    betaYear[k] ~ dnorm(0, sd = 1.2)
   }
   
   # Random effects
@@ -136,8 +136,8 @@ code <- nimbleCode({
     u_id[j] ~ dnorm(0, sd = tau_id)
   }
   
-  tau_yi ~ dunif(0, 3)
-  tau_block ~ dunif(0, 1)
+  tau_yi ~ dunif(0, 2)
+  tau_block ~ dunif(0, 0.8)
   tau_id ~ dunif(0, 1)
   
   sigma ~ dunif(0, 2) # prior for variance components based on Gelman (2006); 
@@ -196,15 +196,17 @@ cTSSmcmc <- compileNimble(TSSmcmc, project = TSSmodel)
 # Step 4: Run the MCMC
 time_baseline <- system.time(TSSresults <- runMCMC(cTSSmcmc,
                                                   niter=11000,
-                                                  nburnin=1000,
-                                                  WAIC=TRUE)
+                                                  nburnin=1000, #1000
+                                                  WAIC=TRUE,
+                                                  nchains=1)
                                                   )
 cat("Sampling time: ", time_baseline[3], "seconds.\n")
 
 # Step 5: Extract the samples and WAIC
   # Samples
 samples <- TSSresults$samples
-samples
+colnames(samples)
+summary(samples)
   # Watanabe-Akaike Information Criterion (WAIC): captures model fit
   # Log Pointwise Predictive Density (LPPD): captures model complexity
   # effective number of parameters in the model (pWAIC): balances previous two
@@ -213,8 +215,9 @@ WAIC <- TSSresults$WAIC
 WAIC
 
 
-# Step 6: Inspect Results
-pdf('./Output/mcmcOutput.pdf')
+# Step 6: Inspect Convergence
+plot(samples[,'betaTrt[3]'], type = 'l')
+pdf('./Output/mcmcOutput1.pdf')
 plot(as.mcmc(samples))
 dev.off()
 
