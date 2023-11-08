@@ -24,7 +24,7 @@ Feel free to explore the code, datasets, and documentation. Your contributions, 
 - [Getting Started](#getting-started)
 - [Running the Model](#running-the-model)
 - [Data Structure](#data-structure)
-- [Selecting Priors for MCMC Analysis](#selecting-priors-for-mcmc-analysis)
+- [Selecting Priors for MCMC Analysis](#selecting-starting-values-and-priors-for-mcmc-analysis)
 - [Results of Analysis](#results-of-analysis)
 - [Contribute](#contribute)
 - [License](#license)
@@ -84,7 +84,10 @@ _Note_:
 A plot map of the agricultural field is shown below for context:
 ![plot map](/images/plot.png)
 
-## Selecting Priors for MCMC Analysis
+## Selecting Starting Values and Priors for MCMC Analysis
+
+REWRITE THIS SECTION
+
 In Bayesian modeling, the choice of priors is fundamental as they represent our beliefs about the parameters before incorporating any data. In our MCMC analysis, we've selected our priors based on the structure of the model and insights from the observed data.
 
 ### Fixed Effects

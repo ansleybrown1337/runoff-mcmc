@@ -62,14 +62,14 @@ str(tss_df)
 # Get a summary of the data
 summary(tss_df)
 
-# Creating prior std. dev.'s for MCMC (see README.md notes on this)
-recommend_priors <- function(df, column_name) {
+# Creating starting values from std. dev.'s for MCMC (see README.md notes on this)
+recommend_starting_vals <- function(df, column_name) {
   # Ensure column_name exists in the dataframe
   if (!(column_name %in% colnames(df))) {
     stop(paste0("The column '", column_name, "' does not exist in the dataframe."))
   }
   # Let user know what column they have selected
-  cat(paste0("Recommended priors based on column: '", column_name, "'\n\n"))
+  cat(paste0("Recommended starting values based on column: '", column_name, "'\n\n"))
   
   # Compute the maximum standard deviation for each effect
   max_sd <- df %>%
@@ -85,20 +85,20 @@ recommend_priors <- function(df, column_name) {
   doubled_rounded <- round(2 * max_sd)
   
   # Combine the results into a table
-  recommended_prior_table <- bind_cols(
+  recommended_sv_table <- bind_cols(
     effect = names(max_sd),
     identified_max = as.numeric(max_sd),
-    recommended_prior = as.numeric(doubled_rounded)
+    recommended_sv = as.numeric(doubled_rounded)
   )
   
-  return(recommended_prior_table)
+  return(recommended_sv_table)
 }
 
 # Test the function
-priors_tss <- recommend_priors(tss_df, 'tss')
-priors_tss
-priors_tssl <- recommend_priors(tss_df, 'tssl')
-priors_tssl
+sv_tss <- recommend_priors(tss_df, 'tss')
+sv_tss
+sv_tssl <- recommend_priors(tss_df, 'tssl')
+sv_tssl
 
 # ------------------------------------------------------------------------------
 # MCMC Model Developed by A.J. Brown using NIMBLE
@@ -106,18 +106,29 @@ priors_tssl
 # https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf
 # https://r-nimble.org/bayesian-nonparametric-models-in-nimble-part-2-nonparametric-random-effects
 
+# cross-effect; when the y-var experiences all levels of another effect
+# nested effect; adding repetitions of your data (e.g., block)
+
 # Step 1: Build the model
 code <- nimbleCode({
+  # This is where we define parameters and set priors: DO NOT SET PRIORS USING YOUR DATA
+  
   # Fixed effects
+  # consider dropping this beta_0 since it offers no additional functionality;
+  # this would mean the model intercept would default to CT, likely.
   beta0 ~ dnorm(0, sd = 0.8)
   
     # Looping over the elements of betaTrt and betaYear
+    # Matt: do we need multiple Beta's for each Trt? He suspects a single beta.
   for(k in 1:3) {
     betaTrt[k] ~ dnorm(1, sd = 0.8)
   }
   for(k in 1:maxYear) {
     betaYear[k] ~ dnorm(0, sd = 1.2)
   }
+  
+  #^^ consider centering these; z-score, subtract mean, etc.
+  # Matt: this could help convergence
   
   # Random effects
   # Gelman (2006) recommends the uniform prior on the sd scale not the precision scale for random effects:
@@ -190,7 +201,7 @@ TSSmodel <- nimbleModel(
 TSSmcmc <- buildMCMC(TSSmodel, enableWAIC = TRUE)
 
 # Step 3: Compile the model and MCMC
-cTSSmodel <- compileNimble(TSSmodel)
+cTSSmodel <- compileNimble(TSSmodel,showCompilerOutput = TRUE)
 cTSSmcmc <- compileNimble(TSSmcmc, project = TSSmodel)
 
 # Step 4: Run the MCMC
@@ -219,6 +230,17 @@ WAIC
 plot(samples[,'betaTrt[3]'], type = 'l')
 pdf('./Output/mcmcOutput1.pdf')
 plot(as.mcmc(samples))
+
+
+# Look at CI's on the marginal distribution plots include zero
+# This would suggest the beta value is not different from zero
+# specifically look at Trt vars; we think
+df = data.frame(samples)
+# Calculate the quantiles
+q_values <- quantile(df$tau_id, probs = c(0.025, 0.975))
+# Add vertical lines at the quantiles
+abline(v = q_values, col = "red", lty = 2)
+
 dev.off()
 
 
