@@ -24,7 +24,7 @@ Feel free to explore the code, datasets, and documentation. Your contributions, 
 - [Getting Started](#getting-started)
 - [Running the Model](#running-the-model)
 - [Data Structure](#data-structure)
-- [Selecting Priors for MCMC Analysis](#selecting-starting-values-and-priors-for-mcmc-analysis)
+- [Selecting Starting Values and Priors for MCMC Analysis](#selecting-starting-values-and-priors-for-mcmc-analysis)
 - [Results of Analysis](#results-of-analysis)
 - [Contribute](#contribute)
 - [License](#license)
@@ -86,39 +86,42 @@ A plot map of the agricultural field is shown below for context:
 
 ## Selecting Starting Values and Priors for MCMC Analysis
 
-REWRITE THIS SECTION
-
-In Bayesian modeling, the choice of priors is fundamental as they represent our beliefs about the parameters before incorporating any data. In our MCMC analysis, we've selected our priors based on the structure of the model and insights from the observed data.
+In Bayesian modeling, the selection of prior distributions is a critical step that reflects our prior beliefs about the parameters before any data is considered. For our MCMC analysis, we've chosen priors that are informed by expert knowledge, the scale of the parameters, and the context of our study, rather than the observed data.
 
 ### Fixed Effects
-For the fixed effects in our model, we aim to use weakly informative priors:
-- **Prior**: Centered around zero with a standard deviation marginally larger than the sample standard deviation.
-- **Rationale**: The sample standard deviations for `tss` and `tssl` are 0.71 mg/L and 22.15 kg, respectively. We thus selected priors that are centered around zero and have standard deviations slightly more expansive than these values.
+For the fixed effects in our model, we use weakly informative priors:
+- **Prior**: These are set to be centered around zero, indicating no effect as a baseline, with a standard deviation that is reasonably chosen to reflect plausible effect sizes based on external knowledge or scale of the variables.
+- **Rationale**: For instance, if we consider the effect sizes that are typical in similar studies or the scale of measurement, we can set a standard deviation for our priors that is broad enough to express uncertainty without being overly influenced by the data.
 
 ### Random Effects
-Random effects for `yi`, `block`, and `id` are integral to our model. The choice of priors for these terms is based on observed variability:
+Random effects account for variability in `yi`, `block`, and `id` in our model. The priors for these terms are chosen to reflect the expected variability between groups:
 
-- **For `tss`:**
-  - **tau_yi**: `dunif(0, 4)` based on a maximum observed SD across `yi` of 1.88.
-  - **tau_block**: `dunif(0, 2)` based on a maximum observed SD across blocks of 0.787.
-  - **tau_id**: `dunif(0, 2)` based on a maximum observed SD for `id` of 0.948.
+- **General Approach**:
+  - **tau parameters (e.g., tau_yi, tau_block, tau_id)**: Uniform priors with bounds set based on theoretical considerations and understanding of the measurement scale, not on the observed standard deviations.
 
-- **For `tssl`:**
-  - **tau_yi**: `dunif(0, 122)` given a maximum SD across `yi` of 61.1.
-  - **tau_block**: `dunif(0, 45)` given a maximum SD across blocks of 22.7.
-  - **tau_id**: `dunif(0, 61)` based on a maximum SD for `id` of 30.3.
+- **For `tss` and `tssl`**:
+  - Priors for the `tau` parameters are set to uniform distributions with reasonable bounds that allow for flexibility in the variance components.
 
 For each of the `u` terms, representing the random effects:
-- **Priors**: Terms (`u_yi`, `u_block`, `u_id`) are drawn from normal distributions centered at zero. Their standard deviations correspond to their respective tau values.
-- **Rationale**: This captures the variability for each year (`yi`), block, and ID.
+- **Priors**: Terms (`u_yi`, `u_block`, `u_id`) follow normal distributions with a mean of zero and variances informed by the tau parameters.
+- **Rationale**: This reflects the expected variability and is not directly informed by the data itself.
 
 ### Residual Error (sigma)
-- **Prior for `tss`**: `dunif(0, 2)`
-- **Prior for `tssl`**: `dunif(0, 44)` (Double the SD for `tssl`)
-- **Rationale**: These are broad priors for the residual error. Setting the upper bounds as suggested allows the model to accommodate potential larger variabilities in the residuals for both `tss` and `tssl`.
+- **Prior**: Uniform distributions with upper bounds are selected based on plausible ranges of measurement error or variability that are anticipated in the context of the field of study.
+- **Rationale**: These priors are intentionally broad to not be overly restrictive and allow the data to inform the variability in the residuals.
+
+By selecting priors in this manner, we aim to ensure that they are not informed by the dataset at hand, but rather by prior knowledge and theoretical considerations. This approach upholds the principles of Bayesian analysis, allowing the data to update our prior beliefs reflected in the posterior distributions.
 
 ## Results of Analysis
-Coming Soon!
+### Frequentist LMM Results
+Forest plot of the frequentist LMM pairwise comparison results for `tss`:
+Coming soon!
+
+Forest plot of the frequentist LMM pairwise comparison results for `tssl`:
+![frequentist](/Output/forest_plot_all_LMM.jpg)
+
+### Bayesian LMM Results
+Coming soon!
 
 ## Contribute
 
