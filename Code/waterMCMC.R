@@ -19,15 +19,16 @@ setwd(dirname(getwd()))
 
 # Import libraries
 package.list <- c(
-    'nimble',
-    'coda',
-    'lme4',
-    'lmerTest',
-    'lsmeans',
-    'ggplot2',
-    'dplyr',
-    'tidyr'
-    )
+  'BayesianTools',  
+  'nimble',
+  'coda',
+  'lme4',
+  'lmerTest',
+  'lsmeans',
+  'ggplot2',
+  'dplyr',
+  'tidyr'
+  )
 packageLoad <- function(packages){
   for (i in packages) {
     if (!require(i, character.only = TRUE)) {
@@ -45,16 +46,21 @@ tss_df <- read.csv("./Example Data/tss.csv", header = TRUE)
 head(tss_df)
 
 # Convert columns to their respective data types
-tss_df$date <- as.Date(tss_df$date, format="%m/%d/%Y")
-tss_df$year <- as.factor(tss_df$year)
-tss_df$yi <- as.factor(tss_df$yi)
-tss_df$id <- as.factor(tss_df$id)
-tss_df$block <- as.factor(tss_df$block)
-tss_df$trt <- as.factor(tss_df$trt)
-tss_df$irr <- as.factor(tss_df$irr)
-tss_df$tss <- as.numeric(tss_df$tss)
-tss_df$out <- as.numeric(tss_df$out)
-tss_df$tssl <- as.numeric(tss_df$tssl)
+assign_type <- function(df) {
+  df$date <- as.Date(df$date, format="%m/%d/%Y")
+  df$year <- as.factor(df$year)
+  df$yi <- as.factor(df$yi)
+  df$id <- as.factor(df$id)
+  df$block <- as.factor(df$block)
+  df$trt <- as.factor(df$trt)
+  df$irr <- as.factor(df$irr)
+  df$tss <- as.numeric(df$tss)
+  df$out <- as.numeric(df$out)
+  df$tssl <- as.numeric(df$tssl)
+  
+  return(df)
+}
+tss_df <- assign_type(tss_df)
 
 # Print the structure of the dataframe to confirm data types
 str(tss_df)
@@ -62,15 +68,38 @@ str(tss_df)
 # Get a summary of the data
 summary(tss_df)
 
+# Declare the water analyte we're interested in
+analyte <- 'tss'
+tss_df$analyte <- tss_df[[analyte]]
+
+# Convert data back to numbers and add center columns
+center_data <- function(df) {
+  # Ensure that columns are numeric
+  df$analyte = as.numeric(df$analyte)
+  df$trt = as.numeric(df$trt)
+  df$yi = as.numeric(df$yi)
+  df$id = as.numeric(df$id)
+  df$year = as.numeric(df$year)
+  df$block = as.numeric(df$block)
+  
+  # Center each column by subtracting its mean
+  df$analyte_ctr = df$analyte - mean(df$analyte, na.rm = TRUE)
+  df$trt_ctr = df$trt - mean(df$trt, na.rm = TRUE)
+  df$yi_ctr = df$yi - mean(df$yi, na.rm = TRUE)
+  df$id_ctr = df$id - mean(df$id, na.rm = TRUE)
+  df$year_ctr = df$year - mean(df$year, na.rm = TRUE)
+  df$block_ctr = df$block - mean(df$block, na.rm = TRUE)
+  
+  return(df)
+}
+tss_df <- center_data(tss_df)
 # Creating starting values from std. dev.'s for MCMC (see README.md notes on this)
 recommend_starting_vals <- function(df, column_name) {
   # Ensure column_name exists in the dataframe
   if (!(column_name %in% colnames(df))) {
     stop(paste0("The column '", column_name, "' does not exist in the dataframe."))
   }
-  # Let user know what column they have selected
-  cat(paste0("Recommended starting values based on column: '", column_name, "'\n\n"))
-  
+
   # Compute the maximum standard deviation for each effect
   max_sd <- df %>%
     summarise(
@@ -78,27 +107,37 @@ recommend_starting_vals <- function(df, column_name) {
       block = max(tapply(.data[[column_name]], block, sd)),
       year = max(tapply(.data[[column_name]], year, sd)),
       yi = max(tapply(.data[[column_name]], yi, sd)),
-      id = max(tapply(.data[[column_name]], id, sd))
+      id = max(tapply(.data[[column_name]], id, sd)),
+      all = sd(.data[[as.name(column_name)]], na.rm = TRUE)
+    )
+  
+  # Compute the mean for each effect
+  effect_mean <- df %>%
+    summarise(
+      trt = mean(tapply(.data[[column_name]], trt, mean)),
+      block = mean(tapply(.data[[column_name]], block, mean)),
+      year = mean(tapply(.data[[column_name]], year, mean)),
+      yi = mean(tapply(.data[[column_name]], yi, mean)),
+      id = mean(tapply(.data[[column_name]], id, mean)),
+      all = mean(.data[[as.name(column_name)]], na.rm = TRUE)
     )
   
   # Double the max standard deviation and round to the nearest whole number
-  doubled_rounded <- round(2 * max_sd)
+  # doubled_rounded <- round(2 * max_sd)
   
   # Combine the results into a table
   recommended_sv_table <- bind_cols(
     effect = names(max_sd),
-    identified_max = as.numeric(max_sd),
-    recommended_sv = as.numeric(doubled_rounded)
+    max_sd = as.numeric(max_sd),
+    mean = as.numeric(effect_mean)
   )
-  
+  print(recommended_sv_table)
   return(recommended_sv_table)
 }
 
 # Test the function
-sv_tss <- recommend_priors(tss_df, 'tss')
-sv_tss
-sv_tssl <- recommend_priors(tss_df, 'tssl')
-sv_tssl
+sv <- recommend_starting_vals(tss_df, 'analyte_ctr')
+
 
 # ------------------------------------------------------------------------------
 # MCMC Model Developed by A.J. Brown using NIMBLE
@@ -111,24 +150,21 @@ sv_tssl
 
 # Step 1: Build the model
 code <- nimbleCode({
-  # This is where we define parameters and set priors: DO NOT SET PRIORS USING YOUR DATA
+  # This is where we define parameters and set priors.
+  # DO NOT SET PRIORS USING YOUR DATA TO INFORM THEM
   
   # Fixed effects
-  # consider dropping this beta_0 since it offers no additional functionality;
-  # this would mean the model intercept would default to CT, likely.
-  beta0 ~ dnorm(0, sd = 0.8)
+    # consider dropping this beta_0 since it offers no additional functionality;
+    # this would mean the model intercept would default to CT, likely.
+  # beta0 ~ dnorm(0, sd = 0.8)
   
     # Looping over the elements of betaTrt and betaYear
-    # Matt: do we need multiple Beta's for each Trt? He suspects a single beta.
   for(k in 1:3) {
-    betaTrt[k] ~ dnorm(1, sd = 0.8)
+    betaTrt[k] ~ dnorm(0, sd = 1)
   }
   for(k in 1:maxYear) {
-    betaYear[k] ~ dnorm(0, sd = 1.2)
+    betaYear[k] ~ dnorm(0, sd = 1)
   }
-  
-  #^^ consider centering these; z-score, subtract mean, etc.
-  # Matt: this could help convergence
   
   # Random effects
   # Gelman (2006) recommends the uniform prior on the sd scale not the precision scale for random effects:
@@ -147,16 +183,35 @@ code <- nimbleCode({
     u_id[j] ~ dnorm(0, sd = tau_id)
   }
   
-  tau_yi ~ dunif(0, 2)
-  tau_block ~ dunif(0, 0.8)
+  tau_yi ~ dunif(0, 1)
+  tau_block ~ dunif(0, 1)
   tau_id ~ dunif(0, 1)
   
-  sigma ~ dunif(0, 2) # prior for variance components based on Gelman (2006); 
+  sigma ~ dunif(0, 1) # prior for variance components based on Gelman (2006); 
   
+  # reduced model: I'd like to remove yi, block, and id
   for(i in 1:n) {
-    tss[i] ~ dnorm(beta0 + betaTrt[trt[i]] + betaYear[year[i]] + 
-                     u_yi[yi[i]] + u_block[block[i]] + u_id[id[i]], sd = sigma)
+    y[i] ~ dnorm(
+                betaTrt[trt[i]] +
+                betaYear[year[i]] +
+                u_yi[yi[i]] +
+                u_block[block[i]] +
+                u_id[id[i]],
+                sd = sigma
+                 )
   }
+  
+  # Other models to consider, just commented out for reference:
+  # 'full model'
+  # for(i in 1:n) {
+  #   tss[i] ~ dnorm(beta0 + betaTrt[trt[i]] + betaYear[year[i]] + 
+  #                    u_yi[yi[i]] + u_block[block[i]] + u_id[id[i]], sd = sigma)
+  # }
+  # 'no-intercept/B0 model'
+  # for(i in 1:n) {
+  #   y[i] ~ dnorm(betaTrt[trt[i]] + betaYear[year[i]] + 
+  #                    u_yi[yi[i]] + u_block[block[i]] + u_id[id[i]], sd = sigma)
+  # }
 })
 
 constants <- list(
@@ -165,28 +220,28 @@ constants <- list(
   nblock = length(unique(tss_df$block)), 
   nid = length(unique(tss_df$id)), 
   maxYear = length(unique(tss_df$year)),
-  # Converting factors to numeric below for MCMC
-  trt = as.numeric(tss_df$trt),
-  yi = as.numeric(tss_df$yi),
-  id = as.numeric(tss_df$id),
-  year = as.numeric(tss_df$year),
-  block = as.numeric(tss_df$block)
+  trt = tss_df$trt,
+  yi = tss_df$yi,
+  id = tss_df$id,
+  year = tss_df$year,
+  block = tss_df$block
 )
 
 data <- list(
-  tss = tss_df$tss 
+  y = tss_df$analyte_ctr
 )
 
 inits <- list(
-  beta0 = mean(tss_df$tss),
+  # let's use the results from our estimation function here to guess sv's
+  #beta0 = mean(tss_df$tss),
   betaTrt = rep(0, 3), # Initial values for three levels of 'trt'
   betaYear = rep(0, constants$maxYear),
-  sigma = 1, 
-  tau_yi = 1, 
-  tau_block = 1, 
-  tau_id = 1, 
-  u_yi = rep(0, constants$nyi), 
-  u_block = rep(0, constants$nblock), 
+  sigma = sv$max_sd[6], # using std. dev. of analyte_ctr from sv tibble 
+  tau_yi = 1,
+  tau_block = 1,
+  tau_id = 1,
+  u_yi = rep(0, constants$nyi),
+  u_block = rep(0, constants$nblock),
   u_id = rep(0, constants$nid)
 )
 
@@ -205,12 +260,13 @@ cTSSmodel <- compileNimble(TSSmodel,showCompilerOutput = TRUE)
 cTSSmcmc <- compileNimble(TSSmcmc, project = TSSmodel)
 
 # Step 4: Run the MCMC
-time_baseline <- system.time(TSSresults <- runMCMC(cTSSmcmc,
-                                                  niter=11000,
-                                                  nburnin=1000, #1000
-                                                  WAIC=TRUE,
-                                                  nchains=1)
-                                                  )
+time_baseline <- system.time(
+  TSSresults <- runMCMC(cTSSmcmc,
+                        niter=11000,
+                        nburnin=1000, # change to 0 if you want to see burn in
+                        WAIC=TRUE,
+                        nchains=1)
+  )
 cat("Sampling time: ", time_baseline[3], "seconds.\n")
 
 # Step 5: Extract the samples and WAIC
@@ -225,24 +281,17 @@ summary(samples)
 WAIC <- TSSresults$WAIC
 WAIC
 
-
 # Step 6: Inspect Convergence
-plot(samples[,'betaTrt[3]'], type = 'l')
-pdf('./Output/mcmcOutput1.pdf')
+# TODO: learn how to plot 95% CIs on marginal density plots
+pdf('./Output/trace_density_plots.pdf')
 plot(as.mcmc(samples))
-
-
-# Look at CI's on the marginal distribution plots include zero
-# This would suggest the beta value is not different from zero
-# specifically look at Trt vars; we think
-df = data.frame(samples)
-# Calculate the quantiles
-q_values <- quantile(df$tau_id, probs = c(0.025, 0.975))
-# Add vertical lines at the quantiles
-abline(v = q_values, col = "red", lty = 2)
-
 dev.off()
 
+pdf('./Output/correlation_plots.pdf')
+correlationPlot(samples)
+dev.off()
+
+marginalPlot(samples)
 
 
 
@@ -294,8 +343,8 @@ plt_all <- ggplot(lsm_df, aes(x=trt_year, y=lsmean, ymin=lower.CL, ymax=upper.CL
 plt_all
 
 # Save output images
-ggsave(filename = "Output/forest_plot_yr_LMM.png", plot = plt_yr, width = 10, height = 6, dpi = 300)
-ggsave(filename = "Output/forest_plot_all_LMM.png", plot = plt_all, width = 10, height = 6, dpi = 300)
+ggsave(filename = "Output/forest_plot_yr_LMM.jpg", plot = plt_yr, width = 10, height = 6, dpi = 300)
+ggsave(filename = "Output/forest_plot_all_LMM.jpg", plot = plt_all, width = 10, height = 6, dpi = 300)
 
 
 
