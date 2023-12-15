@@ -297,7 +297,14 @@ marginalPlot(samples)
 
 # ------------------------------------------------------------------------------
 # Original Frequentist Model developed by Deleon and Hess
-modtssm <- lmer(tssl~trt*year+(1|yi)+(1|block)+(1|id), data = tss_df)
+modtssm <- lmer(tssl~trt*factor(year)+(1|yi)+(1|block)+(1|id), data = tss_df)
+
+# Issue with the above model: year is not a factor, but a continuous variable.
+# as such, if you try to correct it, you get a singularity error. This is
+# because the model doesn't have enough degrees of freedom to fit the model
+
+# New model: tssl~trt*year+irr+(1|block)
+# - AJ and Tad 15 Dec 2023
 
 # Check model assumptions
 summary(modtssm)
